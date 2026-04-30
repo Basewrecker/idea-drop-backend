@@ -1,6 +1,7 @@
 import express from "express";
 import { SignJWT } from "jose";
 import User from "../models/User.js";
+import { generateToken } from "../utils/generateToken.js";
 
 const router = express.Router();
 
