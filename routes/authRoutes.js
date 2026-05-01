@@ -1,79 +1,68 @@
 import express from "express";
-import { SignJWT } from "jose";
 import User from "../models/User.js";
 import { generateToken } from "../utils/generateToken.js";
-
 const router = express.Router();
+
+// @route POST ap/auth/register
+// @description Register new User
+// @access Public
 
 router.post("/register", async (req, res, next) => {
   try {
-    const { name, email, password } = req.body ?? {};
-    if (!name?.trim() || !email?.trim() || !password) {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
       res.status(400);
-      throw new Error("Name, email and password are required");
-    }
-    if (password.length < 6) {
-      res.status(400);
-      throw new Error("Password must be at least 6 characters");
+      throw new Error("All fields are required");
     }
 
-    const existing = await User.findOne({ email });
-    if (existing) {
-      res.status(409);
-      throw new Error("Email already registered");
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      res.status(400);
+      throw new Error("User already exists");
     }
 
     const user = await User.create({ name, email, password });
 
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const token = await new SignJWT({ id: String(user._id) })
-      .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("7d")
-      .sign(secret);
+    // Create Tokens
+
+    const payload = { userId: user._id.toString() };
+    const accessToken = await generateToken(payload, "1m");
+    const refreshToken = await generateToken(payload, "30d");
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
 
     res.status(201).json({
-      token,
-      user: { id: user._id, name: user.name, email: user.email },
+      accessToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
     });
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    console.log(err);
+    next(err);
   }
 });
 
-router.post("/login", async (req, res, next) => {
-  try {
-    const { email, password } = req.body ?? {};
-    if (!email?.trim() || !password) {
-      res.status(400);
-      throw new Error("Email and password are required");
-    }
+// @route POST ap/auth/logout
+// @description Logout User
+// @access Private
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      res.status(401);
-      throw new Error("Invalid credentials");
-    }
+router.post("/logout", (req, res) => {
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "none",
+  });
 
-    const { default: bcrypt } = await import("bcryptjs");
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
-      res.status(401);
-      throw new Error("Invalid credentials");
-    }
-
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const token = await new SignJWT({ id: String(user._id) })
-      .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("7d")
-      .sign(secret);
-
-    res.json({
-      token,
-      user: { id: user._id, name: user.name, email: user.email },
-    });
-  } catch (error) {
-    next(error);
-  }
+  res.status(200).json({ message: "Logged out the user" });
 });
 
 export default router;
