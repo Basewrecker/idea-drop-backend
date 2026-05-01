@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.post("/register", async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password } = req.body || {};
 
     if (!name || !email || !password) {
       res.status(400);
@@ -69,7 +69,7 @@ router.post("/login", async (req, res, next) => {
 
     if (!user) {
       res.status(401);
-      throw new Erorr("Invalid credentials");
+      throw new Error("Invalid credentials");
     }
     const isMatch = await user.matchPassword(password);
 
