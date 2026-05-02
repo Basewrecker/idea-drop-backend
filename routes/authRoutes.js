@@ -107,12 +107,13 @@ router.post("/login", async (req, res, next) => {
 // @description Logout User
 // @access Private
 
-res.cookie("refreshToken", refreshToken, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-});
+router.post("/logout", (req, res) => {
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  });
 
   res.status(200).json({ message: "Logged out the user" });
 });
