@@ -139,6 +139,18 @@ router.put("/:id", protect, async (req, res, next) => {
       { new: true, runValidators: true },
     );
 
+    idea.title = title;
+    idea.summary = summary;
+    idea.description = description;
+    ideas.tags = Array.isArray(tags)
+      ? tags
+      : typeof tags === "string"
+        ? tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : [];
+
     res.json(updatedIdea);
   } catch (error) {
     console.log(error);
