@@ -1,6 +1,6 @@
 import express from "express";
 const router = express.Router();
-import Idea from "../models/idea.js";
+import Idea from "../models/Idea.js";
 import mongoose from "mongoose";
 import { protect } from "../middleware/authMiddleware.js";
 
